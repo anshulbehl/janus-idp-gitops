@@ -93,7 +93,7 @@ global:
                 mountPoints:
                   - importName: createAnsibleContentAction
                     mountPoint: entity.page.overview/cards
-      - package: http://plugin-registry:8080/ansible-plugin-backstage-rhaap-backend-0.0.2.tgz
+      - package: http://ansible-plugin-registry.plugin-registries:8080/ansible-plugin-backstage-rhaap-backend-0.0.2.tgz
         disabled: false
         pluginConfig:
           dynamicPlugins:
