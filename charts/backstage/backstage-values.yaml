@@ -68,7 +68,7 @@ global:
       - package: ./dynamic-plugins/dist/backstage-plugin-tech-radar
         disabled: false
       - package: >-
-          http://ansible-plugin-registry.plugin-registries:8080/ansible-plugin-backstage-rhaap-0.0.8.tgz
+          http://ansible-plugin-registry.plugin-registries:8080/ansible-plugin-backstage-rhaap-1.0.0.tgz
         disabled: false
         pluginConfig:
           dynamicPlugins:
@@ -84,7 +84,7 @@ global:
                       text: Ansible
                     path: /ansible
       - package: >-
-          http://ansible-plugin-registry.plugin-registries:8080/ansible-plugin-scaffolder-backend-module-backstage-rhaap-0.0.8.tgz
+          http://ansible-plugin-registry.plugin-registries:8080/ansible-plugin-scaffolder-backend-module-backstage-rhaap-1.0.0.tgz
         disabled: false
         pluginConfig:
           dynamicPlugins:
@@ -93,7 +93,7 @@ global:
                 mountPoints:
                   - importName: createAnsibleContentAction
                     mountPoint: entity.page.overview/cards
-      - package: http://ansible-plugin-registry.plugin-registries:8080/ansible-plugin-backstage-rhaap-backend-0.0.4.tgz
+      - package: http://ansible-plugin-registry.plugin-registries:8080/ansible-plugin-backstage-rhaap-backend-1.0.0.tgz
         disabled: false
         pluginConfig:
           dynamicPlugins:
