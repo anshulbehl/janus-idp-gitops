@@ -2,6 +2,17 @@
 #helm repo update
 #oc project backstage
 #helm install backstage backstage/backstage --values values.yaml
+{% if ocp4_workload_trusted_application_pipeline_orchestrator_enabled is defined %}
+    {% set orchestrator_enabled = ocp4_workload_trusted_application_pipeline_orchestrator_enabled %}
+{% else %}
+    {% set orchestrator_enabled = true %}
+{% endif %}
+{% if ocp4_workload_trusted_application_pipeline_jenkins_enabled is defined %}
+    {% set jenkins_enabled = ocp4_workload_trusted_application_pipeline_jenkins_enabled %}
+{% else %}
+    {% set jenkins_enabled = false %}
+{% endif %}
+
 global:
   auth:
     backend:
@@ -25,33 +36,37 @@ global:
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-plugin-kubernetes
         disabled: false
-      - package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-topology
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-topology
         disabled: false
       - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
         disabled: false
       - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
         disabled: false
-      - package:  ./dynamic-plugins/dist/janus-idp-backstage-plugin-argocd
-        disabled: false
       - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd
         disabled: true
-      - package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-ocm
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-ocm
         disabled: false
-      - package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-ocm-backend-dynamic
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-ocm-backend-dynamic
         disabled: false
       - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-module-utils-dynamic
         disabled: false
-      - package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-keycloak-backend-dynamic
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-keycloak-dynamic
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
         disabled: false
+{% if jenkins_enabled %}
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-jenkins-backend-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-jenkins
+        disabled: false
+{% endif %}
       - package: ./dynamic-plugins/dist/backstage-plugin-techdocs
         disabled: false
-      - package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-tekton
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-tekton
         pluginConfig:
           dynamicPlugins:
             frontend:
-              janus-idp.backstage-plugin-tekton:
+              backstage-community.plugin-tekton:
                 mountPoints:
                   - mountPoint: entity.page.ci/cards
                     importName: TektonCI
@@ -63,10 +78,47 @@ global:
                         allOf:
                           - isTektonCIAvailable
         disabled: false
-      - package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-quay
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-quay
         disabled: false
-      - package: ./dynamic-plugins/dist/backstage-plugin-tech-radar
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-tech-radar
         disabled: false
+      - package:  ./dynamic-plugins/dist/backstage-community-plugin-redhat-argocd
+        disabled: false
+{% if orchestrator_enabled %}
+      - disabled: false
+        package: "@redhat/backstage-plugin-orchestrator-backend-dynamic@1.4.0"
+        integrity: sha512-2aOHDLFrGMAtyHFiyGZwVBZ9Op+TmKYUwfZxwoaGJ1s6JSy/0qgqineEEE0K3dn/f17XBUj+H1dwa5Al598Ugw==
+        pluginConfig:
+          orchestrator:
+            dataIndexService:
+              url: http://sonataflow-platform-data-index-service.sonataflow-infra
+      - disabled: false
+        package: "@redhat/backstage-plugin-orchestrator@1.4.0"
+        integrity: sha512-2yasbfBZ3iKntArIfK+hk9tvv4b/dy9+WKXOcWIotqkI1gv+Nhvy+m55KAUWi2vmfM0rj3EoG6YP+3Zajn1KyA==
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              red-hat-developer-hub.backstage-plugin-orchestrator:
+                appIcons:
+                  - importName: OrchestratorIcon
+                    module: OrchestratorPlugin
+                    name: orchestratorIcon
+                dynamicRoutes:
+                  - importName: OrchestratorPage
+                    menuItem:
+                      icon: orchestratorIcon
+                      text: Orchestrator
+                    module: OrchestratorPlugin
+                    path: /orchestrator
+      - disabled: false
+        package: "./dynamic-plugins/dist/backstage-plugin-notifications"
+      - disabled: false
+        package: "./dynamic-plugins/dist/backstage-plugin-signals"
+      - disabled: false
+        package: "./dynamic-plugins/dist/backstage-plugin-notifications-backend-dynamic"
+      - disabled: false
+        package: "./dynamic-plugins/dist/backstage-plugin-signals-backend-dynamic"
+{% endif %}
 
 upstream:
   backstage:
@@ -81,6 +133,11 @@ upstream:
         value: --no-node-snapshot
       - name: BACKEND_SECRET
         value: "{{ '{{ randAlphaNum 24 | b64enc }}' }}"
+      - name: ORCHESTRATOR_TOKEN
+        valueFrom:
+          secretKeyRef:
+            key: orchestrator-token
+            name: backstage-orchestrator-token
       - name: 'APP_CONFIG_app_baseUrl'
         value: 'https://{{ ocp4_workload_trusted_application_pipeline_backstage_host }}'
       - name: 'APP_CONFIG_backend_baseUrl'
@@ -147,11 +204,24 @@ upstream:
 
     appConfig:
       backend:
+{% if orchestrator_enabled %}
+        auth:
+          externalAccess:
+            - type: static
+              options:
+                token: ${ORCHESTRATOR_TOKEN}
+                subject: orchestrator
+{% endif %}
         listen:
           port: 7007
           host: 0.0.0.0
         csp:
-          connect-src: ["'self'", 'http:', 'https:']
+{% if orchestrator_enabled %}
+          script-src: ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
+          script-src-elem: ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
+          img-src: ["'self'", 'data:']
+{% endif %}
+          connect-src: ["'self'", 'http:', 'https:', 'data:']
         cors:
           origin: https://{{ ocp4_workload_trusted_application_pipeline_backstage_host }}
           methods: [GET, POST, PUT, DELETE]
@@ -196,6 +266,15 @@ upstream:
         # The UI url for Quay, used to generate the link to Quay
         uiUrl: 'https://{{ ocp4_workload_trusted_application_pipeline_quay_host }}'
 
+{% if jenkins_enabled %}
+      jenkins:
+        instances:
+          - name: default
+            baseUrl: {{ ocp4_workload_trusted_application_pipeline_jenkins_host }}
+            username: admin
+            apiKey: {{ ocp4_workload_trusted_application_pipeline_jenkins_token }}
+{% endif %}
+
       techdocs:
         builder: 'external'
         generator:
@@ -203,13 +282,13 @@ upstream:
         publisher:
           type: 'awsS3'
           awsS3:
-            bucketName: {{ ocp4_workload_trusted_application_pipeline_s3_bucket_name }}
-            region: {{ ocp4_workload_trusted_application_pipeline_s3_bucket_region }}
-            endpoint: {{ ocp4_workload_trusted_application_pipeline_s3_bucket_endpoint }}
+            bucketName: {{ ocp4_workload_trusted_application_pipeline_minio_bucket_name }}
+            region: us-east-2
+            endpoint: {{ ocp4_workload_trusted_application_pipeline_minio_endpoint }}
             s3ForcePathStyle: true
             credentials:
-              accessKeyId: {{ ocp4_workload_trusted_application_pipeline_s3_bucket_aws_access_key_id }}
-              secretAccessKey: {{ ocp4_workload_trusted_application_pipeline_s3_bucket_aws_secret_access_key }}
+              accessKeyId: {{ ocp4_workload_trusted_application_pipeline_minio_username }}
+              secretAccessKey: {{ ocp4_workload_trusted_application_pipeline_minio_password }}
 
       auth:
         environment: production
@@ -223,7 +302,7 @@ upstream:
 
       catalog:
         rules:
-          - allow: [Component, System, API, Resource, Location, Template]
+          - allow: [Domain, Component, System, API, Resource, Location, Template]
         locations:
 {% for location in ocp4_workload_trusted_application_pipeline_gitlab_template_locations %}
           - target: https://{{ ocp4_workload_trusted_application_pipeline_gitlab_host }}/{{ location.group }}/{{ location.project }}/blob/{{ location.branch }}/{{ location.file }}
@@ -295,7 +374,11 @@ upstream:
         github: false
         githubOrg: false
         gitlab: true
+{% if jenkins_enabled %}
+        jenkins: true
+{% else %}
         jenkins: false
+{% endif %}
         permission: false
 
   postgresql:
