@@ -304,8 +304,6 @@ upstream:
           baseUrl: https://hub-ansible-automation-platform.{{ ocp4_workload_redhat_developer_hub_apps_domain }}
         rhaap: 
           baseUrl: https://controller-ansible-automation-platform.{{ ocp4_workload_redhat_developer_hub_apps_domain }}
-          #token: {{ aap_controller_token }}
-          #checkSSL: true
 
       integrations:
         gitlab:
