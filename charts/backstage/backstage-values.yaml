@@ -73,9 +73,8 @@ global:
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-community-plugin-tech-radar
         disabled: false
-      - package: >-
-          http://ansible-plugin-registry.plugin-registries:8080/ansible-plugin-backstage-rhaap-1.0.0.tgz
-        disabled: false
+      - disabled: false
+        package: 'http://ansible-plugin-registry.plugin-registries:8080/ansible-plugin-backstage-rhaap-dynamic-2.0.1.tgz'
         pluginConfig:
           dynamicPlugins:
             frontend:
@@ -89,22 +88,13 @@ global:
                       icon: AnsibleLogo
                       text: Ansible
                     path: /ansible
-      - package: >-
-          http://ansible-plugin-registry.plugin-registries:8080/ansible-plugin-scaffolder-backend-module-backstage-rhaap-1.0.0.tgz
-        disabled: false
+      - disabled: false
+        package: >-
+          http://ansible-plugin-registry.plugin-registries:8080/ansible-plugin-scaffolder-backend-module-backstage-rhaap-dynamic-2.0.1.tgz
         pluginConfig:
           dynamicPlugins:
             backend:
-              ansible.plugin-scaffolder-backend-module-backstage-rhaap:
-                mountPoints:
-                  - importName: createAnsibleContentAction
-                    mountPoint: entity.page.overview/cards
-      - package: http://ansible-plugin-registry.plugin-registries:8080/ansible-plugin-backstage-rhaap-backend-1.0.0.tgz
-        disabled: false
-        pluginConfig:
-          dynamicPlugins:
-            backend:
-              ansible.plugin-backstage-rhaap-backend: null
+              ansible.plugin-scaffolder-backend-module-backstage-rhaap: null
       - package:  ./dynamic-plugins/dist/backstage-community-plugin-redhat-argocd
         disabled: false
 
